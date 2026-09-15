@@ -13,6 +13,7 @@
 //   F) "te sumaron a un viaje"         -> SolicitudesViaje con Estado=='aceptada' && Notificado_Push_Resultado == false
 //   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
 //   H) mail al admin por cada caso de Soporte nuevo -> Soporte con Notificado_Mail_Admin == false
+//   I) sembrar el prearmado de ejemplo "7 Lagos" en ViajesPrearmados (una sola vez; no pisa lo que ya haya)
 
 import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
@@ -456,6 +457,49 @@ async function avisarSoporteNuevoPorMail() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// I) Sembrar el prearmado de ejemplo "7 Lagos" (una sola vez; idempotente)
+// ---------------------------------------------------------------------------
+async function sembrarPrearmadoEjemplo() {
+  const ref = db.collection('ViajesPrearmados').doc('siete-lagos');
+  const doc = await ref.get();
+  if (doc.exists) return;
+
+  await ref.set({
+    Nombre: 'Ruta de los 7 Lagos',
+    Descripcion:
+      'El clásico recorrido patagónico entre San Martín de los Andes y ' +
+      'Villa La Angostura, bordeando una cadena de lagos cordilleranos. ' +
+      'Vos ponés tu punto de partida y la app arma el tramo hasta acá.',
+    Dias_Sugeridos: 1,
+    Foto_Url: '',
+    Origen: 'San Martín de los Andes, Neuquén',
+    Origen_Lat: -40.1576,
+    Origen_Lng: -71.3538,
+    Destino: 'Villa La Angostura, Neuquén',
+    Destino_Lat: -40.7599,
+    Destino_Lng: -71.6425,
+    Paradas: [
+      { Nombre: 'Villa Traful, Neuquén', Lat: -40.6167, Lng: -71.4167 },
+    ],
+    Puntos_Interes: [
+      {
+        Nombre: 'Estación de servicio (ejemplo)',
+        Tipo: 'estacion',
+        Descripcion:
+          'Placeholder de ejemplo — acá va un auspiciante real cuando lo ' +
+          'consigamos.',
+        Lat: -40.6167,
+        Lng: -71.4167,
+        Mensaje: '¿Nafta? Estación de servicio próxima (ejemplo).',
+        Contacto: '',
+      },
+    ],
+    Activo: true,
+  });
+  console.log('I) sembrado el prearmado de ejemplo "7 Lagos"');
+}
+
 try {
   await avisarViajesNuevos();
   await avisarDetenidos();
@@ -465,6 +509,7 @@ try {
   await avisarSoporteNuevoPorMail();
   await limpiarSolicitudesHuerfanas();
   await procesarBajas();
+  await sembrarPrearmadoEjemplo();
   console.log('OK');
   process.exit(0);
 } catch (e) {
