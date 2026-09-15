@@ -4,9 +4,14 @@
 // La app NO manda notificaciones: sólo guarda su token en Usuarios/{uid}.FCM_Token.
 // Acá se decide a quién avisar y se envía con la cuenta de servicio de Firebase.
 //
-// Dos trabajos:
-//   A) "un favorito creó un viaje"  -> Viaje con Notificado_Favoritos == false
-//   B) "se detuvo" / "SOS"          -> viajes_en_ruta en Realtime Database
+// Trabajos:
+//   A) "un favorito creó un viaje"     -> Viaje con Notificado_Favoritos == false
+//   B) "se detuvo" / "SOS"             -> viajes_en_ruta en Realtime Database
+//   C) limpiar solicitudes huérfanas   -> SolicitudesViaje de viajes borrados
+//   D) procesar bajas de cuenta        -> BajasCuenta
+//   E) "alguien quiere sumarse a tu viaje" -> SolicitudesViaje con Notificado_Push == false
+//   F) "te sumaron a un viaje"         -> SolicitudesViaje con Estado=='aceptada' && Notificado_Push_Resultado == false
+//   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
 
 import admin from 'firebase-admin';
 
@@ -290,9 +295,126 @@ async function procesarBajas() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// E) Alguien pidió sumarse a un viaje
+// ---------------------------------------------------------------------------
+async function avisarSolicitudesNuevas() {
+  const snap = await db
+    .collection('SolicitudesViaje')
+    .where('Estado', '==', 'pendiente')
+    .where('Notificado_Push', '==', false)
+    .limit(20)
+    .get();
+  if (snap.empty) return;
+  console.log(`E) ${snap.size} solicitud(es) nueva(s)`);
+
+  for (const doc of snap.docs) {
+    const s = doc.data();
+    try {
+      const orgId = s.Organizador_ID;
+      if (!orgId) continue;
+      const orgDoc = await db.collection('Usuarios').doc(orgId).get();
+      const token = orgDoc.data() && orgDoc.data().FCM_Token;
+      const quien = s.Solicitante_Nombre || 'Alguien';
+
+      await enviar(
+        [token],
+        {
+          title: `${quien} quiere sumarse a tu viaje`,
+          body: `"${s.Viaje_Nombre || 'tu viaje'}" — abrí la app para aceptarlo o rechazarlo.`,
+        },
+        { tipo: 'solicitud_nueva', viajeId: s.Viaje_ID },
+      );
+    } catch (e) {
+      console.log(`  error en solicitud ${doc.id}: ${e.message}`);
+    } finally {
+      await doc.ref.update({ Notificado_Push: true });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// F) Te aceptaron en un viaje
+// ---------------------------------------------------------------------------
+async function avisarSolicitudesAceptadas() {
+  const snap = await db
+    .collection('SolicitudesViaje')
+    .where('Estado', '==', 'aceptada')
+    .where('Notificado_Push_Resultado', '==', false)
+    .limit(20)
+    .get();
+  if (snap.empty) return;
+  console.log(`F) ${snap.size} solicitud(es) aceptada(s)`);
+
+  for (const doc of snap.docs) {
+    const s = doc.data();
+    try {
+      const solicitanteId = s.Solicitante_ID;
+      if (!solicitanteId) continue;
+      const uDoc = await db.collection('Usuarios').doc(solicitanteId).get();
+      const token = uDoc.data() && uDoc.data().FCM_Token;
+
+      await enviar(
+        [token],
+        {
+          title: 'Te sumaron a un viaje',
+          body: `"${s.Viaje_Nombre || 'El viaje'}" ya es tuyo — mirá los detalles.`,
+        },
+        { tipo: 'solicitud_aceptada', viajeId: s.Viaje_ID },
+      );
+    } catch (e) {
+      console.log(`  error en solicitud ${doc.id}: ${e.message}`);
+    } finally {
+      await doc.ref.update({ Notificado_Push_Resultado: true });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// G) Respuesta de Soporte
+// ---------------------------------------------------------------------------
+async function avisarRespuestasSoporte() {
+  const snap = await db
+    .collection('Soporte')
+    .where('Estado', '==', 'resuelto')
+    .where('Notificado_Push_Soporte', '==', false)
+    .limit(20)
+    .get();
+  if (snap.empty) return;
+  console.log(`G) ${snap.size} respuesta(s) de soporte`);
+
+  for (const doc of snap.docs) {
+    const s = doc.data();
+    try {
+      const uid = s.Usuario_ID;
+      if (!uid) continue;
+      const uDoc = await db.collection('Usuarios').doc(uid).get();
+      const token = uDoc.data() && uDoc.data().FCM_Token;
+
+      await enviar(
+        [token],
+        {
+          title: 'Tenés una respuesta de Soporte',
+          body: s.Numero
+            ? `Caso #${s.Numero} — abrí la app para verla.`
+            : 'Abrí la app para verla.',
+        },
+        { tipo: 'soporte_respuesta' },
+      );
+    } catch (e) {
+      console.log(`  error en caso ${doc.id}: ${e.message}`);
+    } finally {
+      await doc.ref.update({ Notificado_Push_Soporte: true });
+    }
+  }
+}
+
 try {
   await avisarViajesNuevos();
   await avisarDetenidos();
+  await avisarSolicitudesNuevas();
+  await avisarSolicitudesAceptadas();
+  await avisarRespuestasSoporte();
   await limpiarSolicitudesHuerfanas();
   await procesarBajas();
   console.log('OK');
