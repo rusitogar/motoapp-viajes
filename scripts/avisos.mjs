@@ -12,8 +12,10 @@
 //   E) "alguien quiere sumarse a tu viaje" -> SolicitudesViaje con Notificado_Push == false
 //   F) "te sumaron a un viaje"         -> SolicitudesViaje con Estado=='aceptada' && Notificado_Push_Resultado == false
 //   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
+//   H) mail al admin por cada caso de Soporte nuevo -> Soporte con Notificado_Mail_Admin == false
 
 import admin from 'firebase-admin';
+import nodemailer from 'nodemailer';
 
 const cuenta = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 admin.initializeApp({
@@ -23,6 +25,13 @@ admin.initializeApp({
 
 const db = admin.firestore();
 const rtdb = admin.database();
+const ADMIN_EMAIL = 'rusitogar@gmail.com';
+const mailer = process.env.GMAIL_APP_PASSWORD
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: ADMIN_EMAIL, pass: process.env.GMAIL_APP_PASSWORD },
+    })
+  : null;
 const fcm = admin.messaging();
 
 const UMBRAL_DETENIDO_MS = 10 * 60 * 1000; // 10 minutos
@@ -409,12 +418,51 @@ async function avisarRespuestasSoporte() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// H) Mail al admin por cada caso de Soporte nuevo
+// ---------------------------------------------------------------------------
+async function avisarSoporteNuevoPorMail() {
+  const snap = await db
+    .collection('Soporte')
+    .where('Notificado_Mail_Admin', '==', false)
+    .limit(20)
+    .get();
+  if (snap.empty) return;
+
+  if (!mailer) {
+    console.log(`H) ${snap.size} caso(s) nuevo(s) de Soporte, pero falta el secret GMAIL_APP_PASSWORD — no se manda mail.`);
+    return;
+  }
+  console.log(`H) ${snap.size} caso(s) nuevo(s) de Soporte -> mail`);
+
+  for (const doc of snap.docs) {
+    const s = doc.data();
+    try {
+      await mailer.sendMail({
+        from: `MotoApp Viajes <${ADMIN_EMAIL}>`,
+        to: ADMIN_EMAIL,
+        replyTo: s.Email || undefined,
+        subject: `Soporte — caso #${s.Numero || doc.id} de ${s.Nombre || 'un usuario'}`,
+        text:
+          `${s.Nombre || 'Alguien'} (${s.Email || 's/email'}) escribió desde la app ` +
+          `(versión ${s.Version_App || '?'}):\n\n${s.Mensaje || ''}\n\n` +
+          `Responder desde el panel: https://motoapp-admin.web.app`,
+      });
+    } catch (e) {
+      console.log(`  error mail caso ${doc.id}: ${e.message}`);
+    } finally {
+      await doc.ref.update({ Notificado_Mail_Admin: true });
+    }
+  }
+}
+
 try {
   await avisarViajesNuevos();
   await avisarDetenidos();
   await avisarSolicitudesNuevas();
   await avisarSolicitudesAceptadas();
   await avisarRespuestasSoporte();
+  await avisarSoporteNuevoPorMail();
   await limpiarSolicitudesHuerfanas();
   await procesarBajas();
   console.log('OK');
