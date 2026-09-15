@@ -23,7 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - run: npm install firebase-admin@^13 --no-save --no-audit --no-fund
+      - run: npm install firebase-admin@^13 nodemailer@^6 --no-save --no-audit --no-fund
       - run: node scripts/avisos.mjs
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
