@@ -514,6 +514,31 @@ const PREARMADOS = [
     Puntos_Interes: [],
     Activo: true,
   },
+  {
+    id: 'altas-cumbres',
+    Nombre: 'Altas Cumbres',
+    Descripcion:
+      'Un circuito por tres valles cordobeses: subís por el mítico camino ' +
+      'de Altas Cumbres (con parada obligada en el mirador "El Cóndor"), ' +
+      'bajás a Traslasierra y volvés por Calamuchita. Vos ponés tu punto ' +
+      'de partida y la app arma el tramo hasta acá.',
+    Dias_Sugeridos: 1,
+    Foto_Url: 'https://motoappviajes.web.app/prearmados/altas-cumbres.jpg',
+    Origen: 'Villa Carlos Paz, Córdoba',
+    Origen_Lat: -31.4207828,
+    Origen_Lng: -64.4992141,
+    Destino: 'Villa Carlos Paz, Córdoba',
+    Destino_Lat: -31.4207828,
+    Destino_Lng: -64.4992141,
+    Paradas: [
+      { Nombre: 'Mirador "El Cóndor", Altas Cumbres', Lat: -31.6098803, Lng: -64.7581217 },
+      { Nombre: 'Mina Clavero, Córdoba', Lat: -31.730033, Lng: -65.0050245 },
+      { Nombre: 'Villa General Belgrano, Córdoba', Lat: -31.9776652, Lng: -64.5594102 },
+      { Nombre: 'Dique de Los Molinos, Córdoba', Lat: -31.818378, Lng: -64.502994 },
+    ],
+    Puntos_Interes: [],
+    Activo: true,
+  },
 ];
 
 async function sembrarPrearmados() {
