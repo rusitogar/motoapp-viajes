@@ -470,7 +470,7 @@ const PREARMADOS = [
       'Villa La Angostura, bordeando una cadena de lagos cordilleranos. ' +
       'Vos ponés tu punto de partida y la app arma el tramo hasta acá.',
     Dias_Sugeridos: 1,
-    Foto_Url: '',
+    Foto_Url: 'https://motoappviajes.web.app/prearmados/siete-lagos.jpg',
     Origen: 'San Martín de los Andes, Neuquén',
     Origen_Lat: -40.1576,
     Origen_Lng: -71.3538,
@@ -503,7 +503,7 @@ const PREARMADOS = [
       'asomando a los cerros. Vos ponés tu punto de partida y la app arma ' +
       'el tramo hasta acá.',
     Dias_Sugeridos: 2,
-    Foto_Url: '',
+    Foto_Url: 'https://motoappviajes.web.app/prearmados/san-luis-uspallata.jpg',
     Origen: 'San Luis',
     Origen_Lat: -33.3017267,
     Origen_Lng: -66.3377522,
@@ -520,9 +520,18 @@ async function sembrarPrearmados() {
   for (const { id, ...datos } of PREARMADOS) {
     const ref = db.collection('ViajesPrearmados').doc(id);
     const doc = await ref.get();
-    if (doc.exists) continue;
-    await ref.set(datos);
-    console.log(`I) sembrado el prearmado "${datos.Nombre}"`);
+    if (!doc.exists) {
+      await ref.set(datos);
+      console.log(`I) sembrado el prearmado "${datos.Nombre}"`);
+      continue;
+    }
+    // Ya existe: sólo completamos la foto si falta y ahora tenemos una
+    // (no pisamos nada más — puede haber sido editado a mano).
+    const actual = doc.data();
+    if (!actual.Foto_Url && datos.Foto_Url) {
+      await ref.update({ Foto_Url: datos.Foto_Url });
+      console.log(`I) foto agregada al prearmado "${datos.Nombre}"`);
+    }
   }
 }
 
