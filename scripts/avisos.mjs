@@ -539,6 +539,32 @@ const PREARMADOS = [
     Puntos_Interes: [],
     Activo: true,
   },
+  {
+    id: 'cuyo-noroeste',
+    Nombre: 'Cuyo – Noroeste Argentino',
+    Descripcion:
+      'El gran cruce de Cuyo al NOA: de Mendoza al valle de Jáchal, la ' +
+      'Cuesta de Miranda hacia Chilecito y los cerros pintados de ' +
+      'Cafayate, hasta llegar a Salta. Vos ponés tu punto de partida y ' +
+      'la app arma el tramo hasta acá.',
+    Dias_Sugeridos: 6,
+    Foto_Url: 'https://motoappviajes.web.app/prearmados/cuyo-noa.jpg',
+    Origen: 'Mendoza, Capital',
+    Origen_Lat: -32.8894587,
+    Origen_Lng: -68.8458386,
+    Destino: 'Salta',
+    Destino_Lat: -24.7821269,
+    Destino_Lng: -65.4231976,
+    Paradas: [
+      { Nombre: 'San Juan', Lat: -31.5351074, Lng: -68.5385941 },
+      { Nombre: 'San José de Jáchal, San Juan', Lat: -30.2416824, Lng: -68.7465967 },
+      { Nombre: 'Villa Unión, La Rioja', Lat: -29.3181764, Lng: -68.2282932 },
+      { Nombre: 'Chilecito, La Rioja', Lat: -29.1611279, Lng: -67.4962016 },
+      { Nombre: 'Cafayate, Salta', Lat: -26.0730798, Lng: -65.976052 },
+    ],
+    Puntos_Interes: [],
+    Activo: true,
+  },
 ];
 
 async function sembrarPrearmados() {
