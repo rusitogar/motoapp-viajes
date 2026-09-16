@@ -13,7 +13,7 @@
 //   F) "te sumaron a un viaje"         -> SolicitudesViaje con Estado=='aceptada' && Notificado_Push_Resultado == false
 //   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
 //   H) mail al admin por cada caso de Soporte nuevo -> Soporte con Notificado_Mail_Admin == false
-//   I) sembrar el prearmado de ejemplo "7 Lagos" en ViajesPrearmados (una sola vez; no pisa lo que ya haya)
+//   I) sembrar los viajes prearmados de ViajesPrearmados (uno por uno, sólo si no existen; no pisa lo que ya haya)
 
 import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
@@ -458,14 +458,12 @@ async function avisarSoporteNuevoPorMail() {
 }
 
 // ---------------------------------------------------------------------------
-// I) Sembrar el prearmado de ejemplo "7 Lagos" (una sola vez; idempotente)
+// I) Sembrar los viajes prearmados que van sumando ("Conocé") — cada uno se
+//    crea una sola vez (idempotente por id); si ya existe no se toca.
 // ---------------------------------------------------------------------------
-async function sembrarPrearmadoEjemplo() {
-  const ref = db.collection('ViajesPrearmados').doc('siete-lagos');
-  const doc = await ref.get();
-  if (doc.exists) return;
-
-  await ref.set({
+const PREARMADOS = [
+  {
+    id: 'siete-lagos',
     Nombre: 'Ruta de los 7 Lagos',
     Descripcion:
       'El clásico recorrido patagónico entre San Martín de los Andes y ' +
@@ -496,8 +494,36 @@ async function sembrarPrearmadoEjemplo() {
       },
     ],
     Activo: true,
-  });
-  console.log('I) sembrado el prearmado de ejemplo "7 Lagos"');
+  },
+  {
+    id: 'san-luis-uspallata',
+    Nombre: 'San Luis – Uspallata',
+    Descripcion:
+      'Cruzando San Juan hacia el pie de la cordillera, con Uspallata ya ' +
+      'asomando a los cerros. Vos ponés tu punto de partida y la app arma ' +
+      'el tramo hasta acá.',
+    Dias_Sugeridos: 2,
+    Foto_Url: '',
+    Origen: 'San Luis',
+    Origen_Lat: -33.3017267,
+    Origen_Lng: -66.3377522,
+    Destino: 'Uspallata, Mendoza',
+    Destino_Lat: -32.5910827,
+    Destino_Lng: -69.3478836,
+    Paradas: [{ Nombre: 'San Juan', Lat: -31.5351074, Lng: -68.5385941 }],
+    Puntos_Interes: [],
+    Activo: true,
+  },
+];
+
+async function sembrarPrearmados() {
+  for (const { id, ...datos } of PREARMADOS) {
+    const ref = db.collection('ViajesPrearmados').doc(id);
+    const doc = await ref.get();
+    if (doc.exists) continue;
+    await ref.set(datos);
+    console.log(`I) sembrado el prearmado "${datos.Nombre}"`);
+  }
 }
 
 try {
@@ -509,7 +535,7 @@ try {
   await avisarSoporteNuevoPorMail();
   await limpiarSolicitudesHuerfanas();
   await procesarBajas();
-  await sembrarPrearmadoEjemplo();
+  await sembrarPrearmados();
   console.log('OK');
   process.exit(0);
 } catch (e) {
