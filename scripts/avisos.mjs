@@ -586,6 +586,20 @@ async function sembrarPrearmados() {
   }
 }
 
+async function sembrarConfigAuspiciantes() {
+  const ref = db.collection('config').doc('auspiciantes');
+  const doc = await ref.get();
+  if (doc.exists) return; // ya existe: no lo pisamos (puede haber sido editado a mano).
+  await ref.set({
+    Banners: [
+      'https://motoappviajes.web.app/auspiciantes/fos.jpg',
+      'https://motoappviajes.web.app/auspiciantes/oyambre.jpg',
+      'https://motoappviajes.web.app/auspiciantes/sinvtv.jpg',
+    ],
+  });
+  console.log('J) sembrado config/auspiciantes con los banners actuales');
+}
+
 try {
   await avisarViajesNuevos();
   await avisarDetenidos();
@@ -596,6 +610,7 @@ try {
   await limpiarSolicitudesHuerfanas();
   await procesarBajas();
   await sembrarPrearmados();
+  await sembrarConfigAuspiciantes();
   console.log('OK');
   process.exit(0);
 } catch (e) {
