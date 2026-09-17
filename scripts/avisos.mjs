@@ -586,18 +586,33 @@ async function sembrarPrearmados() {
   }
 }
 
+// Banners que tienen que estar sí o sí en el carrusel de Inicio. Para sumar
+// un auspiciante nuevo: agregar su URL acá y volver a correr el robot — no
+// hace falta build de la app. Nunca se borra nada de esta función (si un
+// auspiciante se da de baja, se saca a mano de Firestore).
+const BANNERS_DESEADOS = [
+  'https://motoappviajes.web.app/auspiciantes/fos.jpg',
+  'https://motoappviajes.web.app/auspiciantes/oyambre.jpg',
+  'https://motoappviajes.web.app/auspiciantes/sinvtv.jpg',
+  'https://motoappviajes.web.app/auspiciantes/mr.jpg',
+];
+
 async function sembrarConfigAuspiciantes() {
   const ref = db.collection('config').doc('auspiciantes');
   const doc = await ref.get();
-  if (doc.exists) return; // ya existe: no lo pisamos (puede haber sido editado a mano).
-  await ref.set({
-    Banners: [
-      'https://motoappviajes.web.app/auspiciantes/fos.jpg',
-      'https://motoappviajes.web.app/auspiciantes/oyambre.jpg',
-      'https://motoappviajes.web.app/auspiciantes/sinvtv.jpg',
-    ],
-  });
-  console.log('J) sembrado config/auspiciantes con los banners actuales');
+  if (!doc.exists) {
+    await ref.set({ Banners: BANNERS_DESEADOS });
+    console.log('J) sembrado config/auspiciantes con los banners actuales');
+    return;
+  }
+  // Ya existe: sumamos los que falten, sin tocar el orden ni sacar nada
+  // (puede haber sido editado a mano, ej. para reordenar o dar de baja uno).
+  const actuales = doc.data().Banners || [];
+  const faltantes = BANNERS_DESEADOS.filter((u) => !actuales.includes(u));
+  if (faltantes.length > 0) {
+    await ref.update({ Banners: [...actuales, ...faltantes] });
+    console.log(`J) agregados ${faltantes.length} banner(s) nuevo(s) a config/auspiciantes`);
+  }
 }
 
 try {
