@@ -14,6 +14,8 @@
 //   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
 //   H) mail al admin por cada caso de Soporte nuevo -> Soporte con Notificado_Mail_Admin == false
 //   I) sembrar los viajes prearmados de ViajesPrearmados (uno por uno, sólo si no existen; no pisa lo que ya haya)
+//   J) sembrar/actualizar config/auspiciantes.Banners (carrusel de Inicio)
+//   K) config/estadisticas.Usuarios_Registrados, para la landing -> 1 vez por día (no en cada corrida)
 
 import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
@@ -624,6 +626,16 @@ async function sembrarConfigAuspiciantes() {
   );
 }
 
+async function actualizarEstadisticas() {
+  const ref = db.collection('config').doc('estadisticas');
+  const hoy = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC)
+  const doc = await ref.get();
+  if (doc.exists && doc.data().Actualizado === hoy) return; // ya corrió hoy
+  const total = (await db.collection('Usuarios').count().get()).data().count;
+  await ref.set({ Usuarios_Registrados: total, Actualizado: hoy }, { merge: true });
+  console.log(`K) usuarios registrados: ${total}`);
+}
+
 try {
   await avisarViajesNuevos();
   await avisarDetenidos();
@@ -635,6 +647,7 @@ try {
   await procesarBajas();
   await sembrarPrearmados();
   await sembrarConfigAuspiciantes();
+  await actualizarEstadisticas();
   console.log('OK');
   process.exit(0);
 } catch (e) {
