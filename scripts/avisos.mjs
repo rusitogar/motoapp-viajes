@@ -14,7 +14,7 @@
 //   G) "tenés una respuesta de Soporte" -> Soporte con Estado=='resuelto' && Notificado_Push_Soporte == false
 //   H) mail al admin por cada caso de Soporte nuevo -> Soporte con Notificado_Mail_Admin == false
 //   I) sembrar los viajes prearmados de ViajesPrearmados (uno por uno, sólo si no existen; no pisa lo que ya haya)
-//   J) sembrar/actualizar config/auspiciantes.Banners (carrusel de Inicio)
+//   J) sincronizar config/auspiciantes.Auspiciantes (carrusel de Inicio: imagen + link de cada uno)
 //   K) config/estadisticas.Usuarios_Registrados, para la landing -> 1 vez por día (no en cada corrida)
 
 import admin from 'firebase-admin';
@@ -588,42 +588,26 @@ async function sembrarPrearmados() {
   }
 }
 
-// Banners que tienen que estar sí o sí en el carrusel de Inicio. Para sumar
-// un auspiciante nuevo: agregar su URL acá y volver a correr el robot — no
-// hace falta build de la app.
-const BANNERS_DESEADOS = [
-  'https://motoappviajes.web.app/auspiciantes/fos.jpg',
-  'https://motoappviajes.web.app/auspiciantes/oyambre.jpg',
-  'https://motoappviajes.web.app/auspiciantes/mr.jpg',
-];
-
-// Banners dados de baja: si están en config/auspiciantes se sacan solos al
-// correr el robot. Para dar de baja uno nuevo: sacarlo de BANNERS_DESEADOS
-// arriba y agregar su URL acá.
-const BANNERS_RETIRADOS = [
-  'https://motoappviajes.web.app/auspiciantes/sinvtv.jpg',
+// Carrusel de Inicio: la lista COMPLETA y en orden de los auspiciantes que
+// aparecen, con la imagen y la página a la que lleva el toque (Link vacío =
+// el banner no es cliqueable). Es la única fuente: para sumar, sacar o
+// cambiar un link, editar esta lista y volver a correr el robot — no hace
+// falta build de la app. Ojo: lo que se edite a mano en Firestore
+// (config/auspiciantes.Auspiciantes) se pisa en la próxima corrida.
+const AUSPICIANTES_INICIO = [
+  { Nombre: 'FOS', Imagen: 'https://motoappviajes.web.app/auspiciantes/fos.jpg', Link: 'https://www.fos.com.ar/' },
+  // Oyambre va con WhatsApp (https://wa.me/549<código de área><número>, sin 0 ni 15); falta el número.
+  { Nombre: 'Café Oyambre', Imagen: 'https://motoappviajes.web.app/auspiciantes/oyambre.jpg', Link: '' },
+  { Nombre: 'MR Services', Imagen: 'https://motoappviajes.web.app/auspiciantes/mr.jpg', Link: 'https://mrservices.com.ar/' },
 ];
 
 async function sembrarConfigAuspiciantes() {
   const ref = db.collection('config').doc('auspiciantes');
   const doc = await ref.get();
-  if (!doc.exists) {
-    await ref.set({ Banners: BANNERS_DESEADOS });
-    console.log('J) sembrado config/auspiciantes con los banners actuales');
-    return;
-  }
-  const actuales = doc.data().Banners || [];
-  const faltantes = BANNERS_DESEADOS.filter((u) => !actuales.includes(u));
-  const aSacar = actuales.filter((u) => BANNERS_RETIRADOS.includes(u));
-  if (faltantes.length === 0 && aSacar.length === 0) return;
-  const nuevos = [
-    ...actuales.filter((u) => !BANNERS_RETIRADOS.includes(u)),
-    ...faltantes,
-  ];
-  await ref.update({ Banners: nuevos });
-  console.log(
-    `J) config/auspiciantes: +${faltantes.length} / -${aSacar.length} banner(s)`
-  );
+  const actuales = doc.exists ? doc.data().Auspiciantes : undefined;
+  if (JSON.stringify(actuales) === JSON.stringify(AUSPICIANTES_INICIO)) return;
+  await ref.set({ Auspiciantes: AUSPICIANTES_INICIO }, { merge: true });
+  console.log(`J) config/auspiciantes actualizado (${AUSPICIANTES_INICIO.length} auspiciantes)`);
 }
 
 async function actualizarEstadisticas() {
