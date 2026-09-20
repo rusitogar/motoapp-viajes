@@ -1,7 +1,18 @@
 {
-  "precio_litro_super": 1431.75,
-  "muestras": 8326,
+  "precio_litro_super": 1432.11,
+  "muestras": 8328,
   "producto": "Nafta (súper) entre 92 y 95 Ron",
   "fuente": "Secretaría de Energía (datos.energia.gob.ar) - Resolución 314/2016",
-  "actualizado": "2026-09-07"
+  "actualizado": "2026-09-20",
+  "paises": {
+    "BR": {
+      "precio_litro": 6.55,
+      "moneda": "BRL",
+      "simbolo": "R$",
+      "muestras": 17164,
+      "producto": "Gasolina comum",
+      "fuente": "ANP - Levantamento de Preços de Combustíveis (gov.br/anp)",
+      "actualizado": "2026-09-20"
+    }
+  }
 }
