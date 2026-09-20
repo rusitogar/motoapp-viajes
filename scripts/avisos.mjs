@@ -78,8 +78,59 @@ async function enviar(tokens, notification, data) {
 
 function primerNombre(u) {
   const s = (u && (u.Apodo || u.Nombre)) || '';
-  return s.trim().split(/\s+/)[0] || 'Un amigo';
+  return s.trim().split(/\s+/)[0] || '';
 }
+
+// --- Idiomas de los avisos -------------------------------------------------
+// Cada persona guarda su idioma en Usuarios/{uid}.Idioma ('es' | 'en' | 'pt').
+// Las cuentas que todavía no lo guardaron (versiones viejas) reciben español.
+const IDIOMAS = ['es', 'en', 'pt'];
+const idiomaDe = (u) => (u && IDIOMAS.includes(u.Idioma) ? u.Idioma : 'es');
+
+/** destinatarios: [{ token, idioma }]. Manda a cada grupo de idioma su texto. */
+async function enviarPorIdioma(destinatarios, armar, data) {
+  const grupos = {};
+  for (const d of destinatarios) {
+    if (!d.token) continue;
+    (grupos[d.idioma] = grupos[d.idioma] || []).push(d.token);
+  }
+  for (const [idioma, tokens] of Object.entries(grupos)) {
+    await enviar(tokens, armar(idioma), data);
+  }
+}
+
+const TEXTOS = {
+  viajeNuevo: {
+    es: (n, v) => ({ title: `${n || 'Un amigo'} creó un viaje`, body: `"${v || 'Nuevo viaje'}" — miralo y sumate si querés.` }),
+    en: (n, v) => ({ title: `${n || 'A friend'} created a trip`, body: `"${v || 'New trip'}" — check it out and join if you like.` }),
+    pt: (n, v) => ({ title: `${n || 'Um amigo'} criou uma viagem`, body: `"${v || 'Nova viagem'}" — dê uma olhada e participe se quiser.` }),
+  },
+  sos: {
+    es: (a) => ({ title: `${a || 'Un rider'}: SOS`, body: `${a || 'Un rider'} pidió ayuda. Abrí el viaje para ver su ubicación.` }),
+    en: (a) => ({ title: `${a || 'A rider'}: SOS`, body: `${a || 'A rider'} asked for help. Open the trip to see their location.` }),
+    pt: (a) => ({ title: `${a || 'Um piloto'}: SOS`, body: `${a || 'Um piloto'} pediu ajuda. Abra a viagem para ver a localização.` }),
+  },
+  detenido: {
+    es: (a, m) => ({ title: `${a || 'Un rider'} se detuvo`, body: `Hace ${m} min que ${a || 'Un rider'} no se mueve.` }),
+    en: (a, m) => ({ title: `${a || 'A rider'} stopped`, body: `${a || 'A rider'} hasn't moved for ${m} min.` }),
+    pt: (a, m) => ({ title: `${a || 'Um piloto'} parou`, body: `${a || 'Um piloto'} está parado há ${m} min.` }),
+  },
+  solicitudNueva: {
+    es: (q, v) => ({ title: `${q || 'Alguien'} quiere sumarse a tu viaje`, body: `"${v || 'tu viaje'}" — abrí la app para aceptarlo o rechazarlo.` }),
+    en: (q, v) => ({ title: `${q || 'Someone'} wants to join your trip`, body: `"${v || 'your trip'}" — open the app to accept or decline.` }),
+    pt: (q, v) => ({ title: `${q || 'Alguém'} quer participar da sua viagem`, body: `"${v || 'sua viagem'}" — abra o app para aceitar ou recusar.` }),
+  },
+  aceptada: {
+    es: (v) => ({ title: 'Te sumaron a un viaje', body: `"${v || 'El viaje'}" ya es tuyo — mirá los detalles.` }),
+    en: (v) => ({ title: 'You were added to a trip', body: `"${v || 'The trip'}" is now yours — check the details.` }),
+    pt: (v) => ({ title: 'Você foi adicionado a uma viagem', body: `"${v || 'A viagem'}" já é sua — veja os detalhes.` }),
+  },
+  soporte: {
+    es: (n) => ({ title: 'Tenés una respuesta de Soporte', body: n ? `Caso #${n} — abrí la app para verla.` : 'Abrí la app para verla.' }),
+    en: (n) => ({ title: 'You have a reply from Support', body: n ? `Case #${n} — open the app to read it.` : 'Open the app to read it.' }),
+    pt: (n) => ({ title: 'Você tem uma resposta do Suporte', body: n ? `Caso #${n} — abra o app para ver.` : 'Abra o app para ver.' }),
+  },
+};
 
 // ---------------------------------------------------------------------------
 // A) Viajes nuevos de favoritos
@@ -107,16 +158,13 @@ async function avisarViajesNuevos() {
         .get();
 
       const miembros = new Set(v.Miembros || []);
-      const tokens = favs.docs
+      const destinatarios = favs.docs
         .filter((d) => d.id !== orgId && !miembros.has(d.id))
-        .map((d) => d.data().FCM_Token);
+        .map((d) => ({ token: d.data().FCM_Token, idioma: idiomaDe(d.data()) }));
 
-      await enviar(
-        tokens,
-        {
-          title: `${nombre} creó un viaje`,
-          body: `"${v.Nombre || 'Nuevo viaje'}" — miralo y sumate si querés.`,
-        },
+      await enviarPorIdioma(
+        destinatarios,
+        (l) => TEXTOS.viajeNuevo[l](nombre, v.Nombre),
         { tipo: 'viaje_favorito', viajeId: doc.id },
       );
     } catch (e) {
@@ -166,24 +214,19 @@ async function avisarDetenidos() {
         const usuarios = await db.getAll(
           ...miembros.map((m) => db.collection('Usuarios').doc(m)),
         );
-        const tokens = usuarios.map((u) => u.data() && u.data().FCM_Token);
+        const destinatarios = usuarios.map((u) => ({
+          token: u.data() && u.data().FCM_Token,
+          idioma: idiomaDe(u.data()),
+        }));
 
-        const apodo = r.apodo || 'Un rider';
+        const apodo = r.apodo || '';
         const mins = r.detenidoDesde
           ? Math.round((ahora - r.detenidoDesde) / 60000)
           : 0;
 
-        await enviar(
-          tokens,
-          estado === 'sos'
-            ? {
-                title: `${apodo}: SOS`,
-                body: `${apodo} pidió ayuda. Abrí el viaje para ver su ubicación.`,
-              }
-            : {
-                title: `${apodo} se detuvo`,
-                body: `Hace ${mins} min que ${apodo} no se mueve.`,
-              },
+        await enviarPorIdioma(
+          destinatarios,
+          (l) => (estado === 'sos' ? TEXTOS.sos[l](apodo) : TEXTOS.detenido[l](apodo, mins)),
           { tipo: `rider_${estado}`, viajeId },
         );
         await avisadoRef.child(uid).set(estado);
@@ -257,6 +300,21 @@ async function procesarBajas() {
           }),
         ),
       );
+      // Su última posición y su aviso en los viajes ajenos (Realtime Database)
+      for (const v of memberViajes.docs) {
+        await rtdb.ref(`viajes_en_ruta/${v.id}/${uid}`).remove();
+        await rtdb.ref(`avisos_ruta/${v.id}/${uid}`).remove();
+      }
+      // Su foto de perfil (Storage)
+      try {
+        await admin
+          .storage()
+          .bucket('app-viaje-moto.firebasestorage.app')
+          .file(`fotos_perfil/${uid}/foto.jpg`)
+          .delete({ ignoreNotFound: true });
+      } catch (e) {
+        console.log(`   no se pudo borrar la foto de ${uid}: ${e.message}`);
+      }
 
       // Sacarlo de Amigos / Favoritos de todas las cuentas
       for (const campo of ['Amigos', 'Favoritos']) {
@@ -327,14 +385,11 @@ async function avisarSolicitudesNuevas() {
       if (!orgId) continue;
       const orgDoc = await db.collection('Usuarios').doc(orgId).get();
       const token = orgDoc.data() && orgDoc.data().FCM_Token;
-      const quien = s.Solicitante_Nombre || 'Alguien';
+      const quien = s.Solicitante_Nombre || '';
 
-      await enviar(
-        [token],
-        {
-          title: `${quien} quiere sumarse a tu viaje`,
-          body: `"${s.Viaje_Nombre || 'tu viaje'}" — abrí la app para aceptarlo o rechazarlo.`,
-        },
+      await enviarPorIdioma(
+        [{ token, idioma: idiomaDe(orgDoc.data()) }],
+        (l) => TEXTOS.solicitudNueva[l](quien, s.Viaje_Nombre),
         { tipo: 'solicitud_nueva', viajeId: s.Viaje_ID },
       );
     } catch (e) {
@@ -366,12 +421,9 @@ async function avisarSolicitudesAceptadas() {
       const uDoc = await db.collection('Usuarios').doc(solicitanteId).get();
       const token = uDoc.data() && uDoc.data().FCM_Token;
 
-      await enviar(
-        [token],
-        {
-          title: 'Te sumaron a un viaje',
-          body: `"${s.Viaje_Nombre || 'El viaje'}" ya es tuyo — mirá los detalles.`,
-        },
+      await enviarPorIdioma(
+        [{ token, idioma: idiomaDe(uDoc.data()) }],
+        (l) => TEXTOS.aceptada[l](s.Viaje_Nombre),
         { tipo: 'solicitud_aceptada', viajeId: s.Viaje_ID },
       );
     } catch (e) {
@@ -403,14 +455,9 @@ async function avisarRespuestasSoporte() {
       const uDoc = await db.collection('Usuarios').doc(uid).get();
       const token = uDoc.data() && uDoc.data().FCM_Token;
 
-      await enviar(
-        [token],
-        {
-          title: 'Tenés una respuesta de Soporte',
-          body: s.Numero
-            ? `Caso #${s.Numero} — abrí la app para verla.`
-            : 'Abrí la app para verla.',
-        },
+      await enviarPorIdioma(
+        [{ token, idioma: idiomaDe(uDoc.data()) }],
+        (l) => TEXTOS.soporte[l](s.Numero),
         { tipo: 'soporte_respuesta' },
       );
     } catch (e) {
@@ -666,8 +713,482 @@ const PREARMADOS = [
   },
 ];
 
+// Traducciones (inglés / portugués) de los prearmados y sus puntos de interés.
+// Se guardan junto a cada documento (campo Traducciones) y la app muestra la del idioma del teléfono.
+const TRAD_PREARMADOS = {
+  "en": {
+    "rutas": {
+      "siete-lagos": {
+        "Nombre": "Seven Lakes Route",
+        "Descripcion": "The classic Patagonian route between San Martín de los Andes and Villa La Angostura, running along a chain of Andean lakes. You set your starting point and the app builds the leg up to here."
+      },
+      "san-luis-uspallata": {
+        "Nombre": "San Luis – Uspallata",
+        "Descripcion": "Crossing San Juan toward the foot of the Andes, with Uspallata already showing among the hills. You set your starting point and the app builds the leg up to here."
+      },
+      "altas-cumbres": {
+        "Nombre": "Altas Cumbres",
+        "Descripcion": "A loop through three valleys in Córdoba: you climb the legendary Altas Cumbres road (with a must-stop at the \"El Cóndor\" viewpoint), drop down to Traslasierra and return via Calamuchita. You set your starting point and the app builds the leg up to here."
+      },
+      "cuyo-noroeste": {
+        "Nombre": "Cuyo – Argentine Northwest",
+        "Descripcion": "The great crossing from Cuyo to the Northwest: from Mendoza to the Jáchal valley, the Cuesta de Miranda toward Chilecito and the painted hills of Cafayate, all the way to Salta. You set your starting point and the app builds the leg up to here."
+      }
+    },
+    "pois": {
+      "Mirador Bandurrias": {
+        "Nombre": "Bandurrias Viewpoint",
+        "Descripcion": "View of Lake Lácar, minutes from San Martín de los Andes.",
+        "Mensaje": ""
+      },
+      "Mirador Arroyo Partido": {
+        "Nombre": "Arroyo Partido Viewpoint",
+        "Descripcion": "A stream that splits in two and goes separate ways.",
+        "Mensaje": "Arroyo Partido Viewpoint just ahead: a good place to stop."
+      },
+      "Mirador Lago Machónico": {
+        "Nombre": "Lake Machónico Viewpoint",
+        "Descripcion": "A stop by the lake, with the Andean forest as a backdrop.",
+        "Mensaje": ""
+      },
+      "Cascada Vuliñanco": {
+        "Nombre": "Vuliñanco Waterfall",
+        "Descripcion": "A waterfall steps from the road, deep in the forest.",
+        "Mensaje": "Vuliñanco Waterfall nearby: worth a stop and a photo."
+      },
+      "Mirador Lago Falkner": {
+        "Nombre": "Lake Falkner Viewpoint",
+        "Descripcion": "One of the prettiest lakes on the route.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Villarino": {
+        "Nombre": "Lake Villarino Viewpoint",
+        "Descripcion": "Open view of the lake and the mountains.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Escondido": {
+        "Nombre": "Lake Escondido Viewpoint",
+        "Descripcion": "A small, quiet lake right by the road.",
+        "Mensaje": ""
+      },
+      "Cascada Ñivinco": {
+        "Nombre": "Ñivinco Waterfall",
+        "Descripcion": "A short detour (about 2 km) to the waterfall.",
+        "Mensaje": ""
+      },
+      "Bosque Sumergido de Villa Traful": {
+        "Nombre": "Villa Traful Sunken Forest",
+        "Descripcion": "A forest that ended up under the water of Lake Traful. Visited by boat tour or diving.",
+        "Mensaje": "Villa Traful nearby: don't miss the Sunken Forest."
+      },
+      "Mirador Lago Correntoso": {
+        "Nombre": "Lake Correntoso Viewpoint",
+        "Descripcion": "View of the lake on the way to Villa La Angostura.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Espejo": {
+        "Nombre": "Lake Espejo Viewpoint",
+        "Descripcion": "Still waters that mirror the forest.",
+        "Mensaje": ""
+      },
+      "Mirador Belvedere": {
+        "Nombre": "Belvedere Viewpoint",
+        "Descripcion": "Panoramic view of Villa La Angostura and Nahuel Huapi.",
+        "Mensaje": ""
+      },
+      "Mirador Bahía Mansa": {
+        "Nombre": "Bahía Mansa Viewpoint",
+        "Descripcion": "A calm shore on Lake Nahuel Huapi.",
+        "Mensaje": ""
+      },
+      "Parque Nacional Sierra de las Quijadas": {
+        "Nombre": "Sierra de las Quijadas National Park",
+        "Descripcion": "Canyons and reddish landscapes in the San Luis desert; the main entrance is via a detour.",
+        "Mensaje": "Sierra de las Quijadas nearby: one of the most striking landscapes on the road."
+      },
+      "Casa Natal de Sarmiento": {
+        "Nombre": "Sarmiento's Birthplace",
+        "Descripcion": "In San Juan: the house where Domingo F. Sarmiento was born.",
+        "Mensaje": ""
+      },
+      "Museo Argentino de Motos Antiguas": {
+        "Nombre": "Argentine Vintage Motorcycle Museum",
+        "Descripcion": "In Mendoza: a must-stop for motorcyclists.",
+        "Mensaje": "Vintage Motorcycle Museum, in Mendoza: a must-stop for motorcyclists."
+      },
+      "Museo del Área Fundacional": {
+        "Nombre": "Founding Area Museum",
+        "Descripcion": "Remains of the original city of Mendoza.",
+        "Mensaje": ""
+      },
+      "Memorial de la Bandera de los Andes": {
+        "Nombre": "Flag of the Andes Memorial",
+        "Descripcion": "Commemorates the flag San Martín carried across the Andes.",
+        "Mensaje": ""
+      },
+      "Embalse Potrerillos": {
+        "Nombre": "Potrerillos Reservoir",
+        "Descripcion": "A mountain lake on the way to Uspallata, ideal for a break.",
+        "Mensaje": "Potrerillos Reservoir nearby: a good place for a break on the way to Uspallata."
+      },
+      "Museo Histórico Las Bóvedas": {
+        "Nombre": "Las Bóvedas Historical Museum",
+        "Descripcion": "Ruins of the old smelting vaults, in Uspallata.",
+        "Mensaje": ""
+      },
+      "Mirador de Uspallata": {
+        "Nombre": "Uspallata Viewpoint",
+        "Descripcion": "View of the Uspallata valley and the foothills.",
+        "Mensaje": ""
+      },
+      "Cascada Pie Grande": {
+        "Nombre": "Pie Grande Waterfall",
+        "Descripcion": "A waterfall in Mina Clavero, among rocks and water.",
+        "Mensaje": "Mina Clavero waterfalls nearby: a stop to cool off."
+      },
+      "Cañón de los Vencejos": {
+        "Nombre": "Vencejos Canyon",
+        "Descripcion": "Canyon and waterfall very close to the previous one.",
+        "Mensaje": ""
+      },
+      "Museo del Cura Brochero": {
+        "Nombre": "Cura Brochero Museum",
+        "Descripcion": "In Villa Cura Brochero: the story of the saint Cura Brochero.",
+        "Mensaje": ""
+      },
+      "Estación Astrofísica de Bosque Alegre": {
+        "Nombre": "Bosque Alegre Astrophysical Station",
+        "Descripcion": "An astronomical observatory in the Córdoba hills.",
+        "Mensaje": ""
+      },
+      "Mirador de Costa Azul": {
+        "Nombre": "Costa Azul Viewpoint",
+        "Descripcion": "View of Lake San Roque from Costa Azul.",
+        "Mensaje": ""
+      },
+      "Estancia Jesuítica de Alta Gracia": {
+        "Nombre": "Jesuit Estancia of Alta Gracia",
+        "Descripcion": "A UNESCO World Heritage Site.",
+        "Mensaje": "Alta Gracia nearby: its Jesuit Estancia is a World Heritage Site."
+      },
+      "Museo Casa del Che Guevara": {
+        "Nombre": "Che Guevara House Museum",
+        "Descripcion": "The house where Che Guevara lived as a child.",
+        "Mensaje": ""
+      },
+      "Museo Manuel de Falla": {
+        "Nombre": "Manuel de Falla Museum",
+        "Descripcion": "The house where the composer Manuel de Falla lived.",
+        "Mensaje": ""
+      },
+      "Mirador Cuesta de Huaco": {
+        "Nombre": "Cuesta de Huaco Viewpoint",
+        "Descripcion": "View of the Huaco gorge, on the way to Jáchal.",
+        "Mensaje": ""
+      },
+      "Mirador Cuesta de Miranda": {
+        "Nombre": "Cuesta de Miranda Viewpoint",
+        "Descripcion": "The most famous hill road on La Rioja's Route 40: curves between colorful hills.",
+        "Mensaje": "Cuesta de Miranda nearby: some of the best curves and views on the road."
+      },
+      "Cablecarril de Chilecito": {
+        "Nombre": "Chilecito Cable Car",
+        "Descripcion": "An old mining cable car, a historic monument.",
+        "Mensaje": ""
+      },
+      "Samay Huasi": {
+        "Nombre": "Samay Huasi",
+        "Descripcion": "Joaquín V. González's house in Chilecito, now a museum and garden.",
+        "Mensaje": ""
+      },
+      "Los Castillos (Quebrada de las Conchas)": {
+        "Nombre": "Los Castillos (Quebrada de las Conchas)",
+        "Descripcion": "Reddish rock formations in the Quebrada de las Conchas.",
+        "Mensaje": ""
+      },
+      "Las Ventanas (Quebrada de las Conchas)": {
+        "Nombre": "Las Ventanas (Quebrada de las Conchas)",
+        "Descripcion": "A rock formation with openings.",
+        "Mensaje": ""
+      },
+      "El Obelisco (Quebrada de las Conchas)": {
+        "Nombre": "El Obelisco (Quebrada de las Conchas)",
+        "Descripcion": "An obelisk-shaped rock by the side of the road.",
+        "Mensaje": ""
+      },
+      "El Anfiteatro (Quebrada de las Conchas)": {
+        "Nombre": "El Anfiteatro (Quebrada de las Conchas)",
+        "Descripcion": "A large natural hollow in the rock, with special acoustics.",
+        "Mensaje": ""
+      },
+      "Garganta del Diablo (Quebrada de las Conchas)": {
+        "Nombre": "Devil's Throat (Quebrada de las Conchas)",
+        "Descripcion": "The most famous formation in the gorge.",
+        "Mensaje": "Quebrada de las Conchas: the Devil's Throat is close."
+      },
+      "Museo de Arqueología de Alta Montaña": {
+        "Nombre": "High Mountain Archaeology Museum",
+        "Descripcion": "In Salta: the finds from the Llullaillaco volcano.",
+        "Mensaje": ""
+      },
+      "Cerro San Bernardo": {
+        "Nombre": "San Bernardo Hill",
+        "Descripcion": "View of the city of Salta; you go up by cable car.",
+        "Mensaje": ""
+      }
+    }
+  },
+  "pt": {
+    "rutas": {
+      "siete-lagos": {
+        "Nombre": "Rota dos 7 Lagos",
+        "Descripcion": "O clássico roteiro patagônico entre San Martín de los Andes e Villa La Angostura, margeando uma cadeia de lagos andinos. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+      },
+      "san-luis-uspallata": {
+        "Nombre": "San Luis – Uspallata",
+        "Descripcion": "Atravessando San Juan rumo ao pé da cordilheira, com Uspallata já aparecendo entre os morros. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+      },
+      "altas-cumbres": {
+        "Nombre": "Altas Cumbres",
+        "Descripcion": "Um circuito por três vales de Córdoba: você sobe pela lendária estrada de Altas Cumbres (com parada obrigatória no mirante \"El Cóndor\"), desce a Traslasierra e volta por Calamuchita. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+      },
+      "cuyo-noroeste": {
+        "Nombre": "Cuyo – Noroeste Argentino",
+        "Descripcion": "A grande travessia de Cuyo ao Noroeste: de Mendoza ao vale de Jáchal, a Cuesta de Miranda rumo a Chilecito e os morros coloridos de Cafayate, até chegar a Salta. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+      }
+    },
+    "pois": {
+      "Mirador Bandurrias": {
+        "Nombre": "Mirante Bandurrias",
+        "Descripcion": "Vista para o Lago Lácar, a poucos minutos de San Martín de los Andes.",
+        "Mensaje": ""
+      },
+      "Mirador Arroyo Partido": {
+        "Nombre": "Mirante Arroyo Partido",
+        "Descripcion": "Um riacho que se divide em dois e segue caminhos diferentes.",
+        "Mensaje": "Mirante Arroyo Partido logo à frente: bom lugar para parar."
+      },
+      "Mirador Lago Machónico": {
+        "Nombre": "Mirante Lago Machónico",
+        "Descripcion": "Parada à beira do lago, com a floresta andina ao fundo.",
+        "Mensaje": ""
+      },
+      "Cascada Vuliñanco": {
+        "Nombre": "Cachoeira Vuliñanco",
+        "Descripcion": "Cachoeira a poucos passos da estrada, em plena floresta.",
+        "Mensaje": "Cachoeira Vuliñanco por perto: vale uma parada e uma foto."
+      },
+      "Mirador Lago Falkner": {
+        "Nombre": "Mirante Lago Falkner",
+        "Descripcion": "Um dos lagos mais bonitos do caminho.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Villarino": {
+        "Nombre": "Mirante Lago Villarino",
+        "Descripcion": "Vista aberta para o lago e a cordilheira.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Escondido": {
+        "Nombre": "Mirante Lago Escondido",
+        "Descripcion": "Um lago pequeno e tranquilo, à beira da estrada.",
+        "Mensaje": ""
+      },
+      "Cascada Ñivinco": {
+        "Nombre": "Cachoeira Ñivinco",
+        "Descripcion": "Desvio curto (cerca de 2 km) até a cachoeira.",
+        "Mensaje": ""
+      },
+      "Bosque Sumergido de Villa Traful": {
+        "Nombre": "Floresta Submersa de Villa Traful",
+        "Descripcion": "Uma floresta que ficou debaixo d'água no Lago Traful. Visita-se de barco ou mergulhando.",
+        "Mensaje": "Villa Traful por perto: não perca a Floresta Submersa."
+      },
+      "Mirador Lago Correntoso": {
+        "Nombre": "Mirante Lago Correntoso",
+        "Descripcion": "Vista do lago a caminho de Villa La Angostura.",
+        "Mensaje": ""
+      },
+      "Mirador Lago Espejo": {
+        "Nombre": "Mirante Lago Espejo",
+        "Descripcion": "Águas paradas onde a floresta se reflete.",
+        "Mensaje": ""
+      },
+      "Mirador Belvedere": {
+        "Nombre": "Mirante Belvedere",
+        "Descripcion": "Vista panorâmica de Villa La Angostura e do Nahuel Huapi.",
+        "Mensaje": ""
+      },
+      "Mirador Bahía Mansa": {
+        "Nombre": "Mirante Bahía Mansa",
+        "Descripcion": "Margem tranquila do lago Nahuel Huapi.",
+        "Mensaje": ""
+      },
+      "Parque Nacional Sierra de las Quijadas": {
+        "Nombre": "Parque Nacional Sierra de las Quijadas",
+        "Descripcion": "Cânions e paisagens avermelhadas no deserto de San Luis; a entrada principal é por um desvio.",
+        "Mensaje": "Sierra de las Quijadas por perto: uma das paisagens mais impressionantes do caminho."
+      },
+      "Casa Natal de Sarmiento": {
+        "Nombre": "Casa Natal de Sarmiento",
+        "Descripcion": "Em San Juan: a casa onde nasceu Domingo F. Sarmiento.",
+        "Mensaje": ""
+      },
+      "Museo Argentino de Motos Antiguas": {
+        "Nombre": "Museu Argentino de Motos Antigas",
+        "Descripcion": "Em Mendoza: parada obrigatória para motociclistas.",
+        "Mensaje": "Museu de Motos Antigas, em Mendoza: parada obrigatória para motociclistas."
+      },
+      "Museo del Área Fundacional": {
+        "Nombre": "Museu da Área Fundacional",
+        "Descripcion": "Restos da cidade original de Mendoza.",
+        "Mensaje": ""
+      },
+      "Memorial de la Bandera de los Andes": {
+        "Nombre": "Memorial da Bandeira dos Andes",
+        "Descripcion": "Lembra a bandeira com a qual San Martín cruzou os Andes.",
+        "Mensaje": ""
+      },
+      "Embalse Potrerillos": {
+        "Nombre": "Represa Potrerillos",
+        "Descripcion": "Lago de montanha a caminho de Uspallata, ideal para uma pausa.",
+        "Mensaje": "Represa Potrerillos por perto: bom lugar para uma pausa a caminho de Uspallata."
+      },
+      "Museo Histórico Las Bóvedas": {
+        "Nombre": "Museu Histórico Las Bóvedas",
+        "Descripcion": "Ruínas das antigas abóbadas de fundição, em Uspallata.",
+        "Mensaje": ""
+      },
+      "Mirador de Uspallata": {
+        "Nombre": "Mirante de Uspallata",
+        "Descripcion": "Vista do vale de Uspallata e da pré-cordilheira.",
+        "Mensaje": ""
+      },
+      "Cascada Pie Grande": {
+        "Nombre": "Cachoeira Pie Grande",
+        "Descripcion": "Cachoeira em Mina Clavero, entre pedras e água.",
+        "Mensaje": "Cachoeiras de Mina Clavero por perto: uma parada para se refrescar."
+      },
+      "Cañón de los Vencejos": {
+        "Nombre": "Cânion dos Vencejos",
+        "Descripcion": "Cânion e cachoeira bem perto da anterior.",
+        "Mensaje": ""
+      },
+      "Museo del Cura Brochero": {
+        "Nombre": "Museu do Cura Brochero",
+        "Descripcion": "Em Villa Cura Brochero: a história do santo Cura Brochero.",
+        "Mensaje": ""
+      },
+      "Estación Astrofísica de Bosque Alegre": {
+        "Nombre": "Estação Astrofísica de Bosque Alegre",
+        "Descripcion": "Observatório astronômico nas serras de Córdoba.",
+        "Mensaje": ""
+      },
+      "Mirador de Costa Azul": {
+        "Nombre": "Mirante de Costa Azul",
+        "Descripcion": "Vista do lago San Roque a partir de Costa Azul.",
+        "Mensaje": ""
+      },
+      "Estancia Jesuítica de Alta Gracia": {
+        "Nombre": "Estância Jesuítica de Alta Gracia",
+        "Descripcion": "Patrimônio Mundial da UNESCO.",
+        "Mensaje": "Alta Gracia por perto: sua Estância Jesuítica é Patrimônio Mundial."
+      },
+      "Museo Casa del Che Guevara": {
+        "Nombre": "Museu Casa do Che Guevara",
+        "Descripcion": "A casa onde Che Guevara viveu quando criança.",
+        "Mensaje": ""
+      },
+      "Museo Manuel de Falla": {
+        "Nombre": "Museu Manuel de Falla",
+        "Descripcion": "A casa onde viveu o compositor Manuel de Falla.",
+        "Mensaje": ""
+      },
+      "Mirador Cuesta de Huaco": {
+        "Nombre": "Mirante Cuesta de Huaco",
+        "Descripcion": "Vista da garganta de Huaco, a caminho de Jáchal.",
+        "Mensaje": ""
+      },
+      "Mirador Cuesta de Miranda": {
+        "Nombre": "Mirante Cuesta de Miranda",
+        "Descripcion": "A subida mais famosa da RN 40 riojana: curvas entre morros coloridos.",
+        "Mensaje": "Cuesta de Miranda por perto: curvas e vistas entre as melhores do caminho."
+      },
+      "Cablecarril de Chilecito": {
+        "Nombre": "Cabo aéreo de Chilecito",
+        "Descripcion": "Antigo cabo aéreo de mineração, monumento histórico.",
+        "Mensaje": ""
+      },
+      "Samay Huasi": {
+        "Nombre": "Samay Huasi",
+        "Descripcion": "A casa de Joaquín V. González em Chilecito, hoje museu e jardim.",
+        "Mensaje": ""
+      },
+      "Los Castillos (Quebrada de las Conchas)": {
+        "Nombre": "Los Castillos (Quebrada de las Conchas)",
+        "Descripcion": "Formações avermelhadas da Quebrada de las Conchas.",
+        "Mensaje": ""
+      },
+      "Las Ventanas (Quebrada de las Conchas)": {
+        "Nombre": "Las Ventanas (Quebrada de las Conchas)",
+        "Descripcion": "Formação com aberturas na rocha.",
+        "Mensaje": ""
+      },
+      "El Obelisco (Quebrada de las Conchas)": {
+        "Nombre": "El Obelisco (Quebrada de las Conchas)",
+        "Descripcion": "Rocha em forma de obelisco à beira da estrada.",
+        "Mensaje": ""
+      },
+      "El Anfiteatro (Quebrada de las Conchas)": {
+        "Nombre": "El Anfiteatro (Quebrada de las Conchas)",
+        "Descripcion": "Grande cavidade natural na rocha, com acústica especial.",
+        "Mensaje": ""
+      },
+      "Garganta del Diablo (Quebrada de las Conchas)": {
+        "Nombre": "Garganta do Diabo (Quebrada de las Conchas)",
+        "Descripcion": "A formação mais famosa da quebrada.",
+        "Mensaje": "Quebrada de las Conchas: a Garganta do Diabo está perto."
+      },
+      "Museo de Arqueología de Alta Montaña": {
+        "Nombre": "Museu de Arqueologia de Alta Montanha",
+        "Descripcion": "Em Salta: os achados do vulcão Llullaillaco.",
+        "Mensaje": ""
+      },
+      "Cerro San Bernardo": {
+        "Nombre": "Morro San Bernardo",
+        "Descripcion": "Vista da cidade de Salta; sobe-se de teleférico.",
+        "Mensaje": ""
+      }
+    }
+  }
+};
+
+// Agrega el campo Traducciones a la ruta y a cada punto de interés.
+function conTraducciones(id, datos) {
+  const idiomas = ['en', 'pt'];
+  const ruta = {};
+  for (const l of idiomas) if (TRAD_PREARMADOS[l].rutas[id]) ruta[l] = TRAD_PREARMADOS[l].rutas[id];
+  return {
+    ...datos,
+    Traducciones: ruta,
+    Puntos_Interes: (datos.Puntos_Interes || []).map((p) => {
+      const t = {};
+      for (const l of idiomas) if (TRAD_PREARMADOS[l].pois[p.Nombre]) t[l] = TRAD_PREARMADOS[l].pois[p.Nombre];
+      return { ...p, Traducciones: t };
+    }),
+  };
+}
+
+// JSON con las claves ordenadas: Firestore no conserva el orden de los campos.
+const estable = (o) =>
+  JSON.stringify(o, (k, v) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : 1)))
+      : v,
+  );
+
 async function sembrarPrearmados() {
-  for (const { id, ...datos } of PREARMADOS) {
+  for (const { id, ...base } of PREARMADOS) {
+    const datos = conTraducciones(id, base);
     const ref = db.collection('ViajesPrearmados').doc(id);
     const doc = await ref.get();
     if (!doc.exists) {
@@ -682,10 +1203,15 @@ async function sembrarPrearmados() {
       await ref.update({ Foto_Url: datos.Foto_Url });
       console.log(`I) foto agregada al prearmado "${datos.Nombre}"`);
     }
-    // Los puntos de interés se definen acá (única fuente): si cambian, se pisan.
-    if (JSON.stringify(actual.Puntos_Interes || []) !== JSON.stringify(datos.Puntos_Interes || [])) {
+    // Los puntos de interés y las traducciones se definen acá (única fuente):
+    // si cambian, se pisan.
+    if (estable(actual.Puntos_Interes || []) !== estable(datos.Puntos_Interes || [])) {
       await ref.update({ Puntos_Interes: datos.Puntos_Interes || [] });
       console.log(`I) puntos de interés actualizados en "${datos.Nombre}" (${(datos.Puntos_Interes || []).length})`);
+    }
+    if (estable(actual.Traducciones || {}) !== estable(datos.Traducciones || {})) {
+      await ref.update({ Traducciones: datos.Traducciones || {} });
+      console.log(`I) traducciones actualizadas en "${datos.Nombre}"`);
     }
   }
 }
