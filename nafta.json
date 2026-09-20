@@ -13,6 +13,16 @@
       "producto": "Gasolina comum",
       "fuente": "ANP - Levantamento de Preços de Combustíveis (gov.br/anp)",
       "actualizado": "2026-09-20"
+    },
+    "CL": {
+      "precio_litro": 1492,
+      "moneda": "CLP",
+      "simbolo": "$",
+      "muestras": 16,
+      "producto": "Gasolina 93 (promedio de las regiones)",
+      "fuente": "CNE - Precios observados a público, promedios por región (cne.cl)",
+      "dato_de": "2026-09-07",
+      "actualizado": "2026-09-20"
     }
   }
 }
