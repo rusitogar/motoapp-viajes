@@ -1169,6 +1169,7 @@ function conTraducciones(id, datos) {
   for (const l of idiomas) if (TRAD_PREARMADOS[l].rutas[id]) ruta[l] = TRAD_PREARMADOS[l].rutas[id];
   return {
     ...datos,
+    Pais: datos.Pais || 'AR',
     Traducciones: ruta,
     Puntos_Interes: (datos.Puntos_Interes || []).map((p) => {
       const t = {};
@@ -1209,6 +1210,10 @@ async function sembrarPrearmados() {
       await ref.update({ Puntos_Interes: datos.Puntos_Interes || [] });
       console.log(`I) puntos de interés actualizados en "${datos.Nombre}" (${(datos.Puntos_Interes || []).length})`);
     }
+    if ((actual.Pais || '') !== datos.Pais) {
+      await ref.update({ Pais: datos.Pais });
+      console.log(`I) país "${datos.Pais}" en "${datos.Nombre}"`);
+    }
     if (estable(actual.Traducciones || {}) !== estable(datos.Traducciones || {})) {
       await ref.update({ Traducciones: datos.Traducciones || {} });
       console.log(`I) traducciones actualizadas en "${datos.Nombre}"`);
@@ -1218,15 +1223,16 @@ async function sembrarPrearmados() {
 
 // Carrusel de Inicio: la lista COMPLETA y en orden de los auspiciantes que
 // aparecen, con la imagen y la página a la que lleva el toque (Link vacío =
-// el banner no es cliqueable). Es la única fuente: para sumar, sacar o
+// el banner no es cliqueable; Paises = en qué países se muestra, vacío = en
+// todos, ej. ['AR'] o ['BR', 'CL']). Es la única fuente: para sumar, sacar o
 // cambiar un link, editar esta lista y volver a correr el robot — no hace
 // falta build de la app. Ojo: lo que se edite a mano en Firestore
 // (config/auspiciantes.Auspiciantes) se pisa en la próxima corrida.
 const AUSPICIANTES_INICIO = [
-  { Nombre: 'FOS', Imagen: 'https://motoappviajes.web.app/auspiciantes/fos.jpg', Link: 'https://www.fos.com.ar/' },
+  { Nombre: 'FOS', Imagen: 'https://motoappviajes.web.app/auspiciantes/fos.jpg', Link: 'https://www.fos.com.ar/', Paises: ['AR'] },
   // Oyambre va con WhatsApp (https://wa.me/549<código de área><número>, sin 0 ni 15); falta el número.
-  { Nombre: 'Café Oyambre', Imagen: 'https://motoappviajes.web.app/auspiciantes/oyambre.jpg', Link: '' },
-  { Nombre: 'MR Services', Imagen: 'https://motoappviajes.web.app/auspiciantes/mr.jpg', Link: 'https://mrservices.com.ar/' },
+  { Nombre: 'Café Oyambre', Imagen: 'https://motoappviajes.web.app/auspiciantes/oyambre.jpg', Link: '', Paises: ['AR'] },
+  { Nombre: 'MR Services', Imagen: 'https://motoappviajes.web.app/auspiciantes/mr.jpg', Link: 'https://mrservices.com.ar/', Paises: ['AR'] },
 ];
 
 async function sembrarConfigAuspiciantes() {
