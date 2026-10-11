@@ -206,9 +206,11 @@ async function avisarDetenidos() {
       if (avisado[uid] === estado) continue;
 
       try {
-        const vDoc = await db.collection('Viaje').doc(viajeId).get();
-        const miembros = (vDoc.data() && vDoc.data().Miembros ? vDoc.data().Miembros : [])
-          .filter((m) => m !== uid);
+        // Sólo a quienes tienen el modo ruta activo en ESTE viaje (están en
+        // `riders`), no a todos los Miembros: si alguien ya dejó de
+        // compartir su ubicación, o nunca la activó, no le llegan estos
+        // avisos de otros riders.
+        const miembros = Object.keys(riders).filter((m) => m !== uid);
         if (miembros.length === 0) continue;
 
         const usuarios = await db.getAll(
