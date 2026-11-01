@@ -6,23 +6,23 @@
   "actualizado": "2026-10-01",
   "paises": {
     "BR": {
-      "precio_litro": 6.56,
+      "precio_litro": 6.55,
       "moneda": "BRL",
       "simbolo": "R$",
-      "muestras": 17278,
+      "muestras": 17826,
       "producto": "Gasolina comum",
       "fuente": "ANP - Levantamento de Preços de Combustíveis (gov.br/anp)",
-      "actualizado": "2026-10-01"
+      "actualizado": "2026-11-01"
     },
     "CL": {
-      "precio_litro": 1492,
+      "precio_litro": 1607,
       "moneda": "CLP",
       "simbolo": "$",
       "muestras": 16,
       "producto": "Gasolina 93 (promedio de las regiones)",
       "fuente": "CNE - Precios observados a público, promedios por región (cne.cl)",
-      "dato_de": "2026-09-07",
-      "actualizado": "2026-10-01"
+      "dato_de": "2026-10-05",
+      "actualizado": "2026-11-01"
     }
   }
 }
