@@ -1172,6 +1172,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Carretera Austral: Puerto Montt – Coyhaique",
     Descripcion: "El gran clásico del sur de Chile: de Puerto Montt a Coyhaique por la Carretera Austral, entre fiordos, volcanes y bosque húmedo. Hay tramos con balsa (ferry): revisá los horarios antes de salir. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 4,
+    Superficie: "mixta",
+    Grupo_Variante: "",
+    Advertencia: "Buena parte de este tramo todavía es de ripio (se está pavimentando por etapas, con obras en curso en 2026). Llevá cubiertas mixtas y revisá el estado actual del camino y los horarios de balsa antes de salir (Vialidad/MOP).",
     Foto_Url: "https://motoappviajes.web.app/prearmados/carretera-austral.jpg",
     Origen: "Puerto Montt, Los Lagos", Origen_Lat: -41.4718, Origen_Lng: -72.93959,
     Destino: "Coyhaique, Aysén", Destino_Lat: -45.57118, Destino_Lng: -72.06849,
@@ -1215,6 +1218,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Vuelta al Lago Llanquihue",
     Descripcion: "La vuelta completa al lago Llanquihue: pueblos de colonización alemana como Puerto Varas, Frutillar y Puerto Octay, con los volcanes Osorno y Calbuco de fondo. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 1,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/llanquihue.jpg",
     Origen: "Puerto Varas, Los Lagos", Origen_Lat: -41.3178, Origen_Lng: -72.98291,
     Destino: "Puerto Varas, Los Lagos", Destino_Lat: -41.3178, Destino_Lng: -72.98291,
@@ -1244,6 +1250,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Pucón – Panguipulli – Coñaripe",
     Descripcion: "Un circuito por los lagos de la Araucanía y Los Ríos: Pucón, Villarrica, Licán Ray, Coñaripe y Panguipulli, con el volcán Villarrica siempre cerca. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 1,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/pucon-conaripe.jpg",
     Origen: "Pucón, Araucanía", Origen_Lat: -39.27312, Origen_Lng: -71.97776,
     Destino: "Pucón, Araucanía", Destino_Lat: -39.27312, Destino_Lng: -71.97776,
@@ -1273,6 +1282,9 @@ const PREARMADOS_PAISES = [
     Nombre: "San Pedro de Atacama – Paso de Jama",
     Descripcion: "Desde San Pedro de Atacama hacia el altiplano: lagunas, volcanes y salares camino al Paso de Jama, en la frontera con Argentina. Se sube por encima de los 4.000 metros, así que llevá abrigo y combustible de sobra. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 2,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/atacama-jama.jpg",
     Origen: "San Pedro de Atacama, Antofagasta", Origen_Lat: -22.9107, Origen_Lng: -68.2001,
     Destino: "Paso de Jama, Antofagasta", Destino_Lat: -23.22643, Destino_Lng: -67.06284,
@@ -1309,6 +1321,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Serra do Rio do Rastro y Corvo Branco",
     Descripcion: "Dos clásicos de la sierra catarinense: la Serra do Rio do Rastro, con sus curvas en zigzag, y la Serra do Corvo Branco, un camino tallado entre paredes de roca, pasando por Urubici. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 2,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/rio-do-rastro.jpg",
     Origen: "Lauro Müller, Santa Catarina", Origen_Lat: -28.39422, Origen_Lng: -49.39754,
     Destino: "Lauro Müller, Santa Catarina", Destino_Lat: -28.39422, Destino_Lng: -49.39754,
@@ -1343,6 +1358,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Río–Santos: Río de Janeiro – Ubatuba",
     Descripcion: "La Costa Verde entre Río de Janeiro y Ubatuba: playas, sierra y selva pegadas al mar, con el casco histórico de Paraty en el medio. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 2,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/rio-santos.jpg",
     Origen: "Río de Janeiro, Río de Janeiro", Origen_Lat: -22.91117, Origen_Lng: -43.23578,
     Destino: "Ubatuba, São Paulo", Destino_Lat: -23.43316, Destino_Lng: -45.08342,
@@ -1370,6 +1388,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Estrada Real: Ouro Preto – Tiradentes",
     Descripcion: "Un tramo del Camino Real de Minas Gerais entre dos joyas coloniales, Ouro Preto y Tiradentes, pasando por São João del-Rei. Iglesias barrocas, museos y calles empedradas de la época del oro. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 2,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/estrada-real.jpg",
     Origen: "Ouro Preto, Minas Gerais", Origen_Lat: -20.38653, Origen_Lng: -43.50437,
     Destino: "Tiradentes, Minas Gerais", Destino_Lat: -21.11047, Destino_Lng: -44.17429,
@@ -1406,6 +1427,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Rota Romântica",
     Descripcion: "La sierra gaúcha de influencia alemana e italiana: Nova Petrópolis, Gramado, Canela y São Francisco de Paula, entre bosques, cascadas y pueblos de aire alpino. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 1,
+    Superficie: "asfalto",
+    Grupo_Variante: "",
+    Advertencia: "",
     Foto_Url: "https://motoappviajes.web.app/prearmados/rota-romantica.jpg",
     Origen: "Nova Petrópolis, Rio Grande do Sul", Origen_Lat: -29.37598, Origen_Lng: -51.11233,
     Destino: "Nova Petrópolis, Rio Grande do Sul", Destino_Lat: -29.37598, Destino_Lng: -51.11233,
@@ -1436,7 +1460,8 @@ const TRAD_PAISES = {
     "rutas": {
       "carretera-austral": {
         "Nombre": "Carretera Austral: Puerto Montt – Coyhaique",
-        "Descripcion": "The great classic of southern Chile: from Puerto Montt to Coyhaique along the Carretera Austral, through fjords, volcanoes and temperate rainforest. Some stretches need a ferry: check the schedules before you leave. You set your starting point and the app builds the leg up to here."
+        "Descripcion": "The great classic of southern Chile: from Puerto Montt to Coyhaique along the Carretera Austral, through fjords, volcanoes and temperate rainforest. Some stretches need a ferry: check the schedules before you leave. You set your starting point and the app builds the leg up to here.",
+        "Advertencia": "A large part of this stretch is still unpaved gravel (it's being paved in stages, with work underway in 2026). Bring dual-sport tires and check the current road conditions and ferry schedules before you leave (Chile's road authority, Vialidad/MOP)."
       },
       "llanquihue": {
         "Nombre": "Lake Llanquihue Loop",
@@ -1819,7 +1844,8 @@ const TRAD_PAISES = {
     "rutas": {
       "carretera-austral": {
         "Nombre": "Carretera Austral: Puerto Montt – Coyhaique",
-        "Descripcion": "O grande clássico do sul do Chile: de Puerto Montt a Coyhaique pela Carretera Austral, entre fiordes, vulcões e floresta úmida. Há trechos com balsa (ferry): confira os horários antes de sair. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+        "Descripcion": "O grande clássico do sul do Chile: de Puerto Montt a Coyhaique pela Carretera Austral, entre fiordes, vulcões e floresta úmida. Há trechos com balsa (ferry): confira os horários antes de sair. Você escolhe o ponto de partida e o app monta o trecho até aqui.",
+        "Advertencia": "Boa parte deste trecho ainda é de cascalho (está sendo pavimentado por etapas, com obras em andamento em 2026). Leve pneus mistos e confira o estado atual da estrada e os horários da balsa antes de sair (Vialidad/MOP do Chile)."
       },
       "llanquihue": {
         "Nombre": "Volta ao Lago Llanquihue",
@@ -2257,6 +2283,21 @@ async function sembrarPrearmados() {
     if ((actual.Pais || '') !== datos.Pais) {
       await ref.update({ Pais: datos.Pais });
       console.log(`I) país "${datos.Pais}" en "${datos.Nombre}"`);
+    }
+    // Superficie/Grupo_Variante/Advertencia también se definen acá — si
+    // cambian en el código, se pisan (igual que País).
+    const camposSuperficie = {
+      Superficie: datos.Superficie || 'asfalto',
+      Grupo_Variante: datos.Grupo_Variante || '',
+      Advertencia: datos.Advertencia || '',
+    };
+    if (
+      (actual.Superficie || 'asfalto') !== camposSuperficie.Superficie ||
+      (actual.Grupo_Variante || '') !== camposSuperficie.Grupo_Variante ||
+      (actual.Advertencia || '') !== camposSuperficie.Advertencia
+    ) {
+      await ref.update(camposSuperficie);
+      console.log(`I) superficie/advertencia actualizadas en "${datos.Nombre}" (${camposSuperficie.Superficie})`);
     }
     if (estable(actual.Traducciones || {}) !== estable(datos.Traducciones || {})) {
       await ref.update({ Traducciones: datos.Traducciones || {} });
