@@ -1321,9 +1321,9 @@ const PREARMADOS_PAISES = [
     Nombre: "Serra do Rio do Rastro y Corvo Branco",
     Descripcion: "Dos clásicos de la sierra catarinense: la Serra do Rio do Rastro, con sus curvas en zigzag, y la Serra do Corvo Branco, un camino tallado entre paredes de roca, pasando por Urubici. Vos ponés tu punto de partida y la app arma el tramo hasta acá.",
     Dias_Sugeridos: 2,
-    Superficie: "asfalto",
+    Superficie: "mixta",
     Grupo_Variante: "",
-    Advertencia: "",
+    Advertencia: "La Serra do Corvo Branco está en obras de pavimentación (avance parcial a 2026): puede tener tramos de tierra o ripio según el frente de obra. Revisá el estado actual del camino antes de salir.",
     Foto_Url: "https://motoappviajes.web.app/prearmados/rio-do-rastro.jpg",
     Origen: "Lauro Müller, Santa Catarina", Origen_Lat: -28.39422, Origen_Lng: -49.39754,
     Destino: "Lauro Müller, Santa Catarina", Destino_Lat: -28.39422, Destino_Lng: -49.39754,
@@ -1477,7 +1477,8 @@ const TRAD_PAISES = {
       },
       "rio-do-rastro": {
         "Nombre": "Serra do Rio do Rastro and Corvo Branco",
-        "Descripcion": "Two classics of the Santa Catarina highlands: the Serra do Rio do Rastro, with its zigzag curves, and the Serra do Corvo Branco, a road cut between rock walls, passing through Urubici. You set your starting point and the app builds the leg up to here."
+        "Descripcion": "Two classics of the Santa Catarina highlands: the Serra do Rio do Rastro, with its zigzag curves, and the Serra do Corvo Branco, a road cut between rock walls, passing through Urubici. You set your starting point and the app builds the leg up to here.",
+        "Advertencia": "The Serra do Corvo Branco is under paving works (partial progress as of 2026): it may still have dirt or gravel stretches depending on the work front. Check current road conditions before you leave."
       },
       "rio-santos": {
         "Nombre": "Rio–Santos: Rio de Janeiro – Ubatuba",
@@ -1861,7 +1862,8 @@ const TRAD_PAISES = {
       },
       "rio-do-rastro": {
         "Nombre": "Serra do Rio do Rastro e Corvo Branco",
-        "Descripcion": "Dois clássicos da serra catarinense: a Serra do Rio do Rastro, com suas curvas em zigue-zague, e a Serra do Corvo Branco, uma estrada talhada entre paredões de rocha, passando por Urubici. Você escolhe o ponto de partida e o app monta o trecho até aqui."
+        "Descripcion": "Dois clássicos da serra catarinense: a Serra do Rio do Rastro, com suas curvas em zigue-zague, e a Serra do Corvo Branco, uma estrada talhada entre paredões de rocha, passando por Urubici. Você escolhe o ponto de partida e o app monta o trecho até aqui.",
+        "Advertencia": "A Serra do Corvo Branco está em obras de pavimentação (avanço parcial em 2026): pode ter trechos de terra ou cascalho dependendo da frente de obra. Confira o estado atual da estrada antes de sair."
       },
       "rio-santos": {
         "Nombre": "Rio–Santos: Rio de Janeiro – Ubatuba",
