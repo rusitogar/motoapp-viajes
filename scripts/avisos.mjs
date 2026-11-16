@@ -2320,6 +2320,7 @@ const AUSPICIANTES_INICIO = [
   // Oyambre va con WhatsApp (https://wa.me/549<código de área><número>, sin 0 ni 15); falta el número.
   { Nombre: 'Café Oyambre', Imagen: 'https://motoappviajes.web.app/auspiciantes/oyambre.jpg', Link: '', Paises: ['AR'] },
   { Nombre: 'MR Services', Imagen: 'https://motoappviajes.web.app/auspiciantes/mr.jpg', Link: 'https://mrservices.com.ar/', Paises: ['AR'] },
+  { Nombre: 'Testimonios', Imagen: 'https://motoappviajes.web.app/auspiciantes/testimonios.jpg', Link: 'https://motoviajesapp.com/testimonios', Paises: [] },
 ];
 
 async function sembrarConfigAuspiciantes() {
